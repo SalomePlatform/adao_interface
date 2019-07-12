@@ -30,10 +30,7 @@
 #include <vector>
 #include <iterator>
 
-std::vector<double> func(const std::vector<double>& vec)
-{
-  return {vec[0],2.*vec[1],3.*vec[2],vec[0]+2.*vec[1]+3.*vec[2]};
-}
+#include "TestAdaoHelper.cxx"
 
 PyObject *multiFunc(PyObject *inp)
 {
@@ -68,7 +65,7 @@ PyObject *multiFunc(PyObject *inp)
         }
         //
         PyGILState_Release(gstate);
-        std::vector<double> res(func(vect));
+        std::vector<double> res(funcBase(vect));
         gstate=PyGILState_Ensure();
         //
         py2cpp::PyPtr resPy(py2cpp::toPyPtr(res));
@@ -116,7 +113,13 @@ void AdaoExchangeTest::test3DVar()
 {
   MainModel mm;
   AdaoExchangeLayer4Quintet adao;
-  adao.init(&mm);
+  adao.init();
+  // For bounds, Background/Vector, Observation/Vector
+  Visitor2 visitorPythonObj(adao.getPythonContext());
+  mm.visitPythonLeaves(&visitorPythonObj);
+  //
+  adao.loadTemplate(&mm);
+  //
   {
     std::string sciptPyOfModelMaker(mm.pyStr());
     std::cerr << sciptPyOfModelMaker << std::endl;
@@ -163,7 +166,13 @@ void AdaoExchangeTest::testBlue()
   mm.visitAll(&vis);
   //
   AdaoExchangeLayer4Quintet adao;
-  adao.init(&mm);
+  adao.init();
+  // For bounds, Background/Vector, Observation/Vector
+  Visitor2 visitorPythonObj(adao.getPythonContext());
+  mm.visitPythonLeaves(&visitorPythonObj);
+  //
+  adao.loadTemplate(&mm);
+  //
   {
     std::string sciptPyOfModelMaker(mm.pyStr());
     std::cerr << sciptPyOfModelMaker << std::endl;
@@ -210,7 +219,13 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
   mm.visitAll(&vis);
   //
   AdaoExchangeLayer4Quintet adao;
-  adao.init(&mm);
+  adao.init();
+  // For bounds, Background/Vector, Observation/Vector
+  Visitor2 visitorPythonObj(adao.getPythonContext());
+  mm.visitPythonLeaves(&visitorPythonObj);
+  //
+  adao.loadTemplate(&mm);
+  //
   {
     std::string sciptPyOfModelMaker(mm.pyStr());
     std::cerr << sciptPyOfModelMaker << std::endl;
@@ -234,6 +249,40 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
   CPPUNIT_ASSERT_DOUBLES_EQUAL(2.,vect[0],1e-7);
   CPPUNIT_ASSERT_DOUBLES_EQUAL(3.,vect[1],1e-7);
   CPPUNIT_ASSERT_DOUBLES_EQUAL(4.,vect[2],1e-7);
+}
+
+void AdaoExchangeTest::testCasCrue()
+{
+  MainModel mm;
+  AdaoExchangeLayer4Quintet adao;
+  adao.init();
+  // For bounds, Background/Vector, Observation/Vector
+  VisitorCruePython visitorPythonObj(adao.getPythonContext());
+  mm.visitPythonLeaves(&visitorPythonObj);
+  //
+  adao.loadTemplate(&mm);
+  //
+  {
+    std::string sciptPyOfModelMaker(mm.pyStr());
+    std::cerr << sciptPyOfModelMaker << std::endl;
+  }
+  adao.execute();
+  PyObject *listOfElts( nullptr );
+  while( adao.next(listOfElts) )
+    {
+      PyObject *resultOfChunk(multiFuncCrue(listOfElts));
+      adao.setResult(resultOfChunk);
+    }
+  PyObject *res(adao.getResult());
+  PyObjectRAII optimum(PyObjectRAII::FromNew(res));
+  PyObjectRAII optimum_4_py2cpp(NumpyToListWaitingForPy2CppManagement(optimum));
+  std::vector<double> vect;
+  {
+    py2cpp::PyPtr obj(optimum_4_py2cpp);
+    py2cpp::fromPyPtr(obj,vect);
+  }
+  CPPUNIT_ASSERT_EQUAL(1,(int)vect.size());
+  CPPUNIT_ASSERT_DOUBLES_EQUAL(25.,vect[0],1e-3);
 }
 
 CPPUNIT_TEST_SUITE_REGISTRATION( AdaoExchangeTest );

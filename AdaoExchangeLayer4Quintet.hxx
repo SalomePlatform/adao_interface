@@ -35,14 +35,15 @@ class AdaoExchangeLayer4Quintet
 public:
   AdaoExchangeLayer4Quintet();
   ~AdaoExchangeLayer4Quintet();
-  void init(AdaoModel::MainModel *model);
+  PyObject *getPythonContext() const;
+  void init();
+  void loadTemplate(AdaoModel::MainModel *model);
   void execute();
   bool next(PyObject *& inputRequested);
   void setResult(PyObject *outputAssociated);
   PyObject *getResult();
 private:
   void initPythonIfNeeded();
-  void loadTemplate(AdaoModel::MainModel *model);
 private:
   Internal *_internal = nullptr;
 };

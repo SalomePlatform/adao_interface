@@ -28,6 +28,7 @@ class AdaoExchangeTest : public CppUnit::TestFixture
   CPPUNIT_TEST(test3DVar);
   CPPUNIT_TEST(testBlue);
   CPPUNIT_TEST(testNonLinearLeastSquares);
+  CPPUNIT_TEST(testCasCrue);
   CPPUNIT_TEST_SUITE_END();
 public:
   void setUp();
@@ -37,4 +38,5 @@ public:
   void test3DVar();
   void testBlue();
   void testNonLinearLeastSquares();
+  void testCasCrue();
 };

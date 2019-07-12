@@ -94,9 +94,15 @@ std::string TopEntry::getParamForSet(const GenericKeyVal& entry) const
 
 std::string GenericKeyVal::pyStrKeyVal() const
 {
-  std::ostringstream oss;
-  oss << "\"" << this->getKey() << "\" : " << this->pyStr();
-  return oss.str();
+  std::string val(this->pyStr());
+  if( !val.empty() )
+    {
+      std::ostringstream oss;
+      oss << "\"" << this->getKey() << "\" : " << val;
+      return oss.str();
+    }
+  else
+    return std::string();
 }
 
 void GenericKeyVal::visitAll(MainModel *godFather, RecursiveVisitor *visitor)
@@ -212,13 +218,21 @@ std::shared_ptr<DictKeyVal> EnumAlgoKeyVal::templateForOthers() const
 
 std::string DictKeyVal::pyStr() const
 {
-  std::ostringstream oss;
-  oss << "{ ";
+  std::vector<std::string> vect;
   std::size_t len(_pairs.size());
   for(std::size_t i=0;i<len;++i)
     {
       const auto& elt(_pairs[i]);
-      oss << elt->pyStrKeyVal();
+      std::string cont(elt->pyStrKeyVal());
+      if( ! cont.empty() )
+        vect.push_back(cont);
+    }
+  len = vect.size();
+  std::ostringstream oss;
+  oss << "{ ";
+  for(std::size_t i=0;i<len;++i)
+    {
+      oss << vect[i];
       if(i!=len-1)
         oss << ", ";
     }

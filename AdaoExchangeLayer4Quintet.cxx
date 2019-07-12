@@ -29,6 +29,7 @@
 #include <semaphore.h>
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <clocale>
 #include <cstdlib>
@@ -215,10 +216,16 @@ AdaoExchangeLayer4Quintet::~AdaoExchangeLayer4Quintet()
   delete _internal;
 }
 
-void AdaoExchangeLayer4Quintet::init(AdaoModel::MainModel *model)
+void AdaoExchangeLayer4Quintet::init()
 {
   initPythonIfNeeded();
-  loadTemplate(model);
+}
+
+PyObject *AdaoExchangeLayer4Quintet::getPythonContext() const
+{
+  if(!_internal)
+    throw AdaoExchangeLayerException("getPythonContext : not initialized !");
+  return _internal->_context;
 }
 
 void AdaoExchangeLayer4Quintet::initPythonIfNeeded()
@@ -242,23 +249,11 @@ class Visitor1 : public AdaoModel::PythonLeafVisitor
 {
 public:
   Visitor1(PyObjectRAII func, PyObject *context):_func(func),_context(context)
-{
-    std::vector< std::vector<double> > bounds{ {0., 10.}, {3., 13.}, {1.5, 15.5} };
-    std::vector< double > Xb{5.,7.,9.};
-    py2cpp::PyPtr boundsPy(py2cpp::toPyPtr(bounds));
-    _bounds = boundsPy.get();
-    Py_XINCREF(_bounds);
-    py2cpp::PyPtr XbPy(py2cpp::toPyPtr(Xb));
-    _Xb = XbPy.get();
-    Py_XINCREF(_Xb);
-    std::vector<double> observation{2., 6., 12., 20.};
-    py2cpp::PyPtr observationPy(py2cpp::toPyPtr(observation));
-    _observation = observationPy.get();
-    Py_XINCREF(_observation);
-
-}
+  {
+  }
+  
   void visit(AdaoModel::MainModel *godFather, AdaoModel::PyObjKeyVal *obj) override
-      {
+  {
     if(obj->getKey()=="Matrix" || obj->getKey()=="DiagonalSparseMatrix")
       {
         std::ostringstream oss; oss << "__" << _cnt++;
@@ -267,23 +262,6 @@ public:
         PyDict_SetItemString(_context,varname.c_str(),Py_None);
         obj->setVarName(varname);
         return ;
-      }
-    if(obj->getKey()=="Bounds")
-      {
-        std::ostringstream oss; oss << "__" << _cnt++;
-        std::string varname(oss.str());
-        obj->setVal(_bounds);
-        PyDict_SetItemString(_context,varname.c_str(),_bounds);
-        obj->setVarName(varname);
-        return ;
-      }
-    if(godFather->findPathOf(obj)=="Background/Vector")
-      {
-        std::ostringstream oss; oss << "__" << _cnt++;
-        std::string varname(oss.str());
-        obj->setVal(_Xb);
-        PyDict_SetItemString(_context,varname.c_str(),_Xb);
-        obj->setVarName(varname);
       }
     if(obj->getKey()=="OneFunction")
       {
@@ -294,22 +272,11 @@ public:
         obj->setVarName(varname);
         return ;
       }
-    if(godFather->findPathOf(obj)=="Observation/Vector")
-      {
-        std::ostringstream oss; oss << "__" << _cnt++;
-        std::string varname(oss.str());
-        obj->setVal(_observation);
-        PyDict_SetItemString(_context,varname.c_str(),_observation);
-        obj->setVarName(varname);
-      }
-      }
+  }
 private:
   unsigned int _cnt = 0;
-  PyObject *_bounds = nullptr;
-  PyObject *_Xb = nullptr;
-  PyObject *_observation = nullptr;
   PyObjectRAII _func;
-  PyObject *_context;
+  PyObject *_context = nullptr;
 };
 
 void AdaoExchangeLayer4Quintet::loadTemplate(AdaoModel::MainModel *model)
@@ -341,7 +308,12 @@ void AdaoExchangeLayer4Quintet::loadTemplate(AdaoModel::MainModel *model)
   //
   {
     std::string sciptPyOfModelMaker(model->pyStr());
+    {
+      std::ofstream ofs("/tmp/H87074/jj");
+      ofs << sciptPyOfModelMaker;
+    }
     PyObjectRAII res(PyObjectRAII::FromNew(PyRun_String(sciptPyOfModelMaker.c_str(),Py_file_input,this->_internal->_context,this->_internal->_context)));
+    PyErr_Print();
     _internal->_adao_case = PyObjectRAII::FromNew(PyDict_GetItemString(this->_internal->_context,"case"));
   }
   if(_internal->_adao_case.isNull())
