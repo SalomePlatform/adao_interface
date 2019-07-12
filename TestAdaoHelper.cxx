@@ -34,59 +34,7 @@ std::vector<double> funcCrue(const std::vector<double>& vec)
   return ret;
 }
 
-PyObject *multiFuncCrue(PyObject *inp)
-{
-  PyGILState_STATE gstate(PyGILState_Ensure());
-  PyObjectRAII iterator(PyObjectRAII::FromNew(PyObject_GetIter(inp)));
-  if(iterator.isNull())
-    throw AdaoExchangeLayerException("Input object is not iterable !");
-  PyObject *item(nullptr);
-  PyObjectRAII numpyModule(PyObjectRAII::FromNew(PyImport_ImportModule("numpy")));
-  if(numpyModule.isNull())
-    throw AdaoExchangeLayerException("Failed to load numpy");
-  PyObjectRAII ravelFunc(PyObjectRAII::FromNew(PyObject_GetAttrString(numpyModule,"ravel")));
-  std::vector< PyObjectRAII > pyrets;
-  while( item = PyIter_Next(iterator) )
-    {
-      PyObjectRAII item2(PyObjectRAII::FromNew(item));
-      {
-        PyObjectRAII args(PyObjectRAII::FromNew(PyTuple_New(1)));
-        PyTuple_SetItem(args,0,item2.retn());
-        PyObjectRAII npyArray(PyObjectRAII::FromNew(PyObject_CallObject(ravelFunc,args)));
-        // Waiting management of npy arrays into py2cpp
-        PyObjectRAII lolistFunc(PyObjectRAII::FromNew(PyObject_GetAttrString(npyArray,"tolist")));
-        PyObjectRAII listPy;
-        {
-          PyObjectRAII args2(PyObjectRAII::FromNew(PyTuple_New(0)));
-          listPy=PyObjectRAII::FromNew(PyObject_CallObject(lolistFunc,args2));
-          }
-        std::vector<double> vect;
-        {
-          py2cpp::PyPtr listPy2(listPy.retn());
-          py2cpp::fromPyPtr(listPy2,vect);
-        }
-        //
-        PyGILState_Release(gstate);
-        std::vector<double> res(funcCrue(vect));
-        gstate=PyGILState_Ensure();
-        //
-        py2cpp::PyPtr resPy(py2cpp::toPyPtr(res));
-        PyObjectRAII resPy2(PyObjectRAII::FromBorrowed(resPy.get()));
-        pyrets.push_back(resPy2);
-      }
-    }
-  std::size_t len(pyrets.size());
-  PyObjectRAII ret(PyObjectRAII::FromNew(PyList_New(len)));
-  for(std::size_t i=0;i<len;++i)
-    {
-      PyList_SetItem(ret,i,pyrets[i].retn());
-    }
-  //PyObject *tmp(PyObject_Repr(ret));
-  // std::cerr << PyUnicode_AsUTF8(tmp) << std::endl;
-  PyGILState_Release(gstate);
-  return ret.retn();
-}
-
+/* Visitor commun pour test3DVar testBlue et testNonLinearLeastSquares*/
 class Visitor2 : public AdaoModel::PythonLeafVisitor
 {
 public:
@@ -142,6 +90,7 @@ private:
   PyObject *_context = nullptr;
 };
 
+/* Visitor pour testCasCrue */
 class VisitorCruePython : public AdaoModel::PythonLeafVisitor
 {
 public:

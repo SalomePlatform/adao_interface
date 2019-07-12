@@ -32,58 +32,66 @@
 
 #include "TestAdaoHelper.cxx"
 
-PyObject *multiFunc(PyObject *inp)
+// Functor a remplacer par un appel a un evaluateur parallele
+class NonParallelFunctor
 {
-  PyGILState_STATE gstate(PyGILState_Ensure());
-  PyObjectRAII iterator(PyObjectRAII::FromNew(PyObject_GetIter(inp)));
-  if(iterator.isNull())
-    throw AdaoExchangeLayerException("Input object is not iterable !");
-  PyObject *item(nullptr);
-  PyObjectRAII numpyModule(PyObjectRAII::FromNew(PyImport_ImportModule("numpy")));
-  if(numpyModule.isNull())
-    throw AdaoExchangeLayerException("Failed to load numpy");
-  PyObjectRAII ravelFunc(PyObjectRAII::FromNew(PyObject_GetAttrString(numpyModule,"ravel")));
-  std::vector< PyObjectRAII > pyrets;
-  while( item = PyIter_Next(iterator) )
-    {
-      PyObjectRAII item2(PyObjectRAII::FromNew(item));
+public:
+  NonParallelFunctor(std::function< std::vector<double>(const std::vector<double>&) > cppFunction):_cpp_function(cppFunction) { }
+  PyObject *operator()(PyObject *inp) const
+  {
+    PyGILState_STATE gstate(PyGILState_Ensure());
+    PyObjectRAII iterator(PyObjectRAII::FromNew(PyObject_GetIter(inp)));
+    if(iterator.isNull())
+      throw AdaoExchangeLayerException("Input object is not iterable !");
+    PyObject *item(nullptr);
+    PyObjectRAII numpyModule(PyObjectRAII::FromNew(PyImport_ImportModule("numpy")));
+    if(numpyModule.isNull())
+      throw AdaoExchangeLayerException("Failed to load numpy");
+    PyObjectRAII ravelFunc(PyObjectRAII::FromNew(PyObject_GetAttrString(numpyModule,"ravel")));
+    std::vector< PyObjectRAII > pyrets;
+    while( item = PyIter_Next(iterator) )
       {
-        PyObjectRAII args(PyObjectRAII::FromNew(PyTuple_New(1)));
-        PyTuple_SetItem(args,0,item2.retn());
-        PyObjectRAII npyArray(PyObjectRAII::FromNew(PyObject_CallObject(ravelFunc,args)));
-        // Waiting management of npy arrays into py2cpp
-        PyObjectRAII lolistFunc(PyObjectRAII::FromNew(PyObject_GetAttrString(npyArray,"tolist")));
-        PyObjectRAII listPy;
+        PyObjectRAII item2(PyObjectRAII::FromNew(item));
         {
-          PyObjectRAII args2(PyObjectRAII::FromNew(PyTuple_New(0)));
-          listPy=PyObjectRAII::FromNew(PyObject_CallObject(lolistFunc,args2));
+          PyObjectRAII args(PyObjectRAII::FromNew(PyTuple_New(1)));
+          PyTuple_SetItem(args,0,item2.retn());
+          PyObjectRAII npyArray(PyObjectRAII::FromNew(PyObject_CallObject(ravelFunc,args)));
+          // Waiting management of npy arrays into py2cpp
+          PyObjectRAII lolistFunc(PyObjectRAII::FromNew(PyObject_GetAttrString(npyArray,"tolist")));
+          PyObjectRAII listPy;
+          {
+            PyObjectRAII args2(PyObjectRAII::FromNew(PyTuple_New(0)));
+            listPy=PyObjectRAII::FromNew(PyObject_CallObject(lolistFunc,args2));
           }
-        std::vector<double> vect;
-        {
-          py2cpp::PyPtr listPy2(listPy.retn());
-          py2cpp::fromPyPtr(listPy2,vect);
+          std::vector<double> vect;
+          {
+            py2cpp::PyPtr listPy2(listPy.retn());
+            py2cpp::fromPyPtr(listPy2,vect);
+          }
+          //
+          PyGILState_Release(gstate);
+          std::vector<double> res(_cpp_function(vect));// L'appel effectif est ici
+          gstate=PyGILState_Ensure();
+          //
+          py2cpp::PyPtr resPy(py2cpp::toPyPtr(res));
+          PyObjectRAII resPy2(PyObjectRAII::FromBorrowed(resPy.get()));
+          pyrets.push_back(resPy2);
         }
-        //
-        PyGILState_Release(gstate);
-        std::vector<double> res(funcBase(vect));
-        gstate=PyGILState_Ensure();
-        //
-        py2cpp::PyPtr resPy(py2cpp::toPyPtr(res));
-        PyObjectRAII resPy2(PyObjectRAII::FromBorrowed(resPy.get()));
-        pyrets.push_back(resPy2);
       }
-    }
-  std::size_t len(pyrets.size());
-  PyObjectRAII ret(PyObjectRAII::FromNew(PyList_New(len)));
-  for(std::size_t i=0;i<len;++i)
-    {
-      PyList_SetItem(ret,i,pyrets[i].retn());
-    }
-  //PyObject *tmp(PyObject_Repr(ret));
-  // std::cerr << PyUnicode_AsUTF8(tmp) << std::endl;
-  PyGILState_Release(gstate);
-  return ret.retn();
-}
+    std::size_t len(pyrets.size());
+    PyObjectRAII ret(PyObjectRAII::FromNew(PyList_New(len)));
+    for(std::size_t i=0;i<len;++i)
+      {
+        PyList_SetItem(ret,i,pyrets[i].retn());
+      }
+    //PyObject *tmp(PyObject_Repr(ret));
+    // std::cerr << PyUnicode_AsUTF8(tmp) << std::endl;
+    PyGILState_Release(gstate);
+    return ret.retn();
+  }
+private:
+  std::function< std::vector<double>(const std::vector<double>&) > _cpp_function;
+};
 
 PyObjectRAII NumpyToListWaitingForPy2CppManagement(PyObject *npObj)
 {
@@ -111,6 +119,7 @@ using namespace AdaoModel;
 
 void AdaoExchangeTest::test3DVar()
 {
+  NonParallelFunctor functor(funcBase);
   MainModel mm;
   AdaoExchangeLayer4Quintet adao;
   adao.init();
@@ -122,13 +131,13 @@ void AdaoExchangeTest::test3DVar()
   //
   {
     std::string sciptPyOfModelMaker(mm.pyStr());
-    std::cerr << sciptPyOfModelMaker << std::endl;
+    //std::cerr << sciptPyOfModelMaker << std::endl;
   }
   adao.execute();
   PyObject *listOfElts( nullptr );
   while( adao.next(listOfElts) )
     {
-      PyObject *resultOfChunk(multiFunc(listOfElts));
+      PyObject *resultOfChunk(functor(listOfElts));
       adao.setResult(resultOfChunk);
     }
   PyObject *res(adao.getResult());
@@ -160,6 +169,7 @@ void AdaoExchangeTest::testBlue()
     void exitSubDir(DictKeyVal *subdir) { }
   };
 
+  NonParallelFunctor functor(funcBase);
   MainModel mm;
   //
   TestBlueVisitor vis;
@@ -175,13 +185,13 @@ void AdaoExchangeTest::testBlue()
   //
   {
     std::string sciptPyOfModelMaker(mm.pyStr());
-    std::cerr << sciptPyOfModelMaker << std::endl;
+    //std::cerr << sciptPyOfModelMaker << std::endl;
   }
   adao.execute();
     PyObject *listOfElts( nullptr );
     while( adao.next(listOfElts) )
       {
-        PyObject *resultOfChunk(multiFunc(listOfElts));
+        PyObject *resultOfChunk(functor(listOfElts));
         adao.setResult(resultOfChunk);
       }
     PyObject *res(adao.getResult());
@@ -212,7 +222,7 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
     void enterSubDir(DictKeyVal *subdir) { }
     void exitSubDir(DictKeyVal *subdir) { }
   };
-
+  NonParallelFunctor functor(funcBase);
   MainModel mm;
   //
   TestNonLinearLeastSquaresVisitor vis;
@@ -228,13 +238,13 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
   //
   {
     std::string sciptPyOfModelMaker(mm.pyStr());
-    std::cerr << sciptPyOfModelMaker << std::endl;
+    //std::cerr << sciptPyOfModelMaker << std::endl;
   }
   adao.execute();
   PyObject *listOfElts( nullptr );
   while( adao.next(listOfElts) )
     {
-      PyObject *resultOfChunk(multiFunc(listOfElts));
+      PyObject *resultOfChunk(functor(listOfElts));
       adao.setResult(resultOfChunk);
     }
   PyObject *res(adao.getResult());
@@ -253,6 +263,7 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
 
 void AdaoExchangeTest::testCasCrue()
 {
+  NonParallelFunctor functor(funcCrue);
   MainModel mm;
   AdaoExchangeLayer4Quintet adao;
   adao.init();
@@ -264,13 +275,13 @@ void AdaoExchangeTest::testCasCrue()
   //
   {
     std::string sciptPyOfModelMaker(mm.pyStr());
-    std::cerr << sciptPyOfModelMaker << std::endl;
+    //std::cerr << sciptPyOfModelMaker << std::endl;
   }
   adao.execute();
   PyObject *listOfElts( nullptr );
   while( adao.next(listOfElts) )
     {
-      PyObject *resultOfChunk(multiFuncCrue(listOfElts));
+      PyObject *resultOfChunk(functor(listOfElts));
       adao.setResult(resultOfChunk);
     }
   PyObject *res(adao.getResult());

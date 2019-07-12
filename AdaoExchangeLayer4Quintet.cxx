@@ -29,7 +29,6 @@
 #include <semaphore.h>
 
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <clocale>
 #include <cstdlib>
@@ -308,10 +307,6 @@ void AdaoExchangeLayer4Quintet::loadTemplate(AdaoModel::MainModel *model)
   //
   {
     std::string sciptPyOfModelMaker(model->pyStr());
-    {
-      std::ofstream ofs("/tmp/H87074/jj");
-      ofs << sciptPyOfModelMaker;
-    }
     PyObjectRAII res(PyObjectRAII::FromNew(PyRun_String(sciptPyOfModelMaker.c_str(),Py_file_input,this->_internal->_context,this->_internal->_context)));
     PyErr_Print();
     _internal->_adao_case = PyObjectRAII::FromNew(PyDict_GetItemString(this->_internal->_context,"case"));
