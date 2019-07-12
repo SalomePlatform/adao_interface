@@ -20,7 +20,7 @@
 
 #include "TestAdaoExchange.hxx"
 
-#include "AdaoExchangeLayer4Quintet.hxx"
+#include "AdaoExchangeLayer.hxx"
 #include "AdaoExchangeLayerException.hxx"
 #include "AdaoModelKeyVal.hxx"
 #include "PyObjectRAII.hxx"
@@ -121,7 +121,7 @@ void AdaoExchangeTest::test3DVar()
 {
   NonParallelFunctor functor(funcBase);
   MainModel mm;
-  AdaoExchangeLayer4Quintet adao;
+  AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   Visitor2 visitorPythonObj(adao.getPythonContext());
@@ -175,7 +175,7 @@ void AdaoExchangeTest::testBlue()
   TestBlueVisitor vis;
   mm.visitAll(&vis);
   //
-  AdaoExchangeLayer4Quintet adao;
+  AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   Visitor2 visitorPythonObj(adao.getPythonContext());
@@ -228,7 +228,7 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
   TestNonLinearLeastSquaresVisitor vis;
   mm.visitAll(&vis);
   //
-  AdaoExchangeLayer4Quintet adao;
+  AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   Visitor2 visitorPythonObj(adao.getPythonContext());
@@ -265,7 +265,7 @@ void AdaoExchangeTest::testCasCrue()
 {
   NonParallelFunctor functor(funcCrue);
   MainModel mm;
-  AdaoExchangeLayer4Quintet adao;
+  AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   VisitorCruePython visitorPythonObj(adao.getPythonContext());

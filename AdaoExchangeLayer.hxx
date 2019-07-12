@@ -29,12 +29,12 @@ namespace AdaoModel
   class MainModel;
 }
 
-class AdaoExchangeLayer4Quintet
+class AdaoExchangeLayer
 {
   class Internal;
 public:
-  AdaoExchangeLayer4Quintet();
-  ~AdaoExchangeLayer4Quintet();
+  AdaoExchangeLayer();
+  ~AdaoExchangeLayer();
   PyObject *getPythonContext() const;
   void init();
   void loadTemplate(AdaoModel::MainModel *model);

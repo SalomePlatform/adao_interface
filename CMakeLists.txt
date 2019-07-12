@@ -19,7 +19,7 @@
 # Author: Anthony Geay, anthony.geay@edf.fr, EDF R&D
 
 cmake_minimum_required(VERSION 2.6)
-project(AdaoExchangeLayer4Quintet)
+project(AdaoExchangeLayer)
 
 ##
 
@@ -61,10 +61,10 @@ include_directories(
   ${PY2CPP_INCLUDE_DIR}
   ${CPPUNIT_INCLUDE_DIRS}
   )
-set(adaoexchange_SOURCES AdaoExchangeLayer4Quintet.cxx AdaoModelKeyVal.cxx)
+set(adaoexchange_SOURCES AdaoExchangeLayer.cxx AdaoModelKeyVal.cxx)
 add_library(adaoexchange ${adaoexchange_SOURCES})
 target_link_libraries(adaoexchange ${PYTHON_LIBRARIES})
-install(FILES AdaoExchangeLayer4Quintet.hxx PyObjectRAII.hxx AdaoExchangeLayerException.hxx AdaoModelKeyVal.hxx DESTINATION include)
+install(FILES AdaoExchangeLayer.hxx PyObjectRAII.hxx AdaoExchangeLayerException.hxx AdaoModelKeyVal.hxx DESTINATION include)
 install(TARGETS adaoexchange DESTINATION lib)
 
 ##

@@ -18,7 +18,7 @@
 //
 // Author: Anthony Geay, anthony.geay@edf.fr, EDF R&D
 
-#include "AdaoExchangeLayer4Quintet.hxx"
+#include "AdaoExchangeLayer.hxx"
 #include "AdaoExchangeLayerException.hxx"
 #include "AdaoModelKeyVal.hxx"
 #include "PyObjectRAII.hxx"
@@ -164,7 +164,7 @@ private:
   AdaoCallbackSt *_pt = nullptr;
 };
 
-class AdaoExchangeLayer4Quintet::Internal
+class AdaoExchangeLayer::Internal
 {
 public:
   Internal():_context(PyObjectRAII::FromNew(PyDict_New()))
@@ -206,32 +206,32 @@ void FreeWChar(int argc, wchar_t **tab)
   delete [] tab;
 }
 
-AdaoExchangeLayer4Quintet::AdaoExchangeLayer4Quintet()
+AdaoExchangeLayer::AdaoExchangeLayer()
 {
 }
 
-AdaoExchangeLayer4Quintet::~AdaoExchangeLayer4Quintet()
+AdaoExchangeLayer::~AdaoExchangeLayer()
 {
   delete _internal;
 }
 
-void AdaoExchangeLayer4Quintet::init()
+void AdaoExchangeLayer::init()
 {
   initPythonIfNeeded();
 }
 
-PyObject *AdaoExchangeLayer4Quintet::getPythonContext() const
+PyObject *AdaoExchangeLayer::getPythonContext() const
 {
   if(!_internal)
     throw AdaoExchangeLayerException("getPythonContext : not initialized !");
   return _internal->_context;
 }
 
-void AdaoExchangeLayer4Quintet::initPythonIfNeeded()
+void AdaoExchangeLayer::initPythonIfNeeded()
 {
   if (!Py_IsInitialized())
     {
-      const char *TAB[]={"AdaoExchangeLayer4Quintet"};
+      const char *TAB[]={"AdaoExchangeLayer"};
       wchar_t **TABW(ConvertToWChar(1,TAB));
       // Python is not initialized
       Py_SetProgramName(const_cast<wchar_t *>(TABW[0]));
@@ -278,7 +278,7 @@ private:
   PyObject *_context = nullptr;
 };
 
-void AdaoExchangeLayer4Quintet::loadTemplate(AdaoModel::MainModel *model)
+void AdaoExchangeLayer::loadTemplate(AdaoModel::MainModel *model)
 {
   const char DECORATOR_FUNC[]="def DecoratorAdao(cppFunc):\n"
       "    def evaluator( xserie ):\n"
@@ -330,13 +330,13 @@ void ExecuteAsync(PyObject *pyExecuteFunction, DataExchangedBetweenThreads *data
   sem_post(&data->_sem);
 }
 
-void AdaoExchangeLayer4Quintet::execute()
+void AdaoExchangeLayer::execute()
 {
-  _internal->_tstate=PyEval_SaveThread(); // release the lock acquired in AdaoExchangeLayer4Quintet::initPythonIfNeeded by PyEval_InitThreads()
+  _internal->_tstate=PyEval_SaveThread(); // release the lock acquired in AdaoExchangeLayer::initPythonIfNeeded by PyEval_InitThreads()
   _internal->_fut = std::async(std::launch::async,ExecuteAsync,_internal->_execute_func,&_internal->_data_btw_threads);
 }
 
-bool AdaoExchangeLayer4Quintet::next(PyObject *& inputRequested)
+bool AdaoExchangeLayer::next(PyObject *& inputRequested)
 {
   sem_wait(&_internal->_data_btw_threads._sem);
   if(_internal->_data_btw_threads._finished)
@@ -351,14 +351,14 @@ bool AdaoExchangeLayer4Quintet::next(PyObject *& inputRequested)
     }
 }
 
-void AdaoExchangeLayer4Quintet::setResult(PyObject *outputAssociated)
+void AdaoExchangeLayer::setResult(PyObject *outputAssociated)
 {
   _internal->_data_btw_threads._data = outputAssociated;
   _internal->_data_btw_threads._finished = false;
   sem_post(&_internal->_data_btw_threads._sem_result_is_here);
 }
 
-PyObject *AdaoExchangeLayer4Quintet::getResult()
+PyObject *AdaoExchangeLayer::getResult()
 {
   _internal->_fut.wait();
   PyEval_RestoreThread(_internal->_tstate);
