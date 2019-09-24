@@ -159,6 +159,7 @@ std::shared_ptr<DictKeyVal> EnumAlgoKeyVal::generateDftParameters() const
   switch(_enum)
     {
     case EnumAlgo::ThreeDVar:
+    case EnumAlgo::LinearLeastSquares:
     case EnumAlgo::NonLinearLeastSquares:
       {
         return templateForOthers();
@@ -180,6 +181,8 @@ std::string EnumAlgoKeyVal::getRepresentation() const
       return "3DVAR";
     case EnumAlgo::NonLinearLeastSquares:
       return "NonLinearLeastSquares";
+    case EnumAlgo::LinearLeastSquares:
+      return "LinearLeastSquares";
     case EnumAlgo::Blue:
       return "Blue";
     default:

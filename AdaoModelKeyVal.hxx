@@ -45,7 +45,8 @@ namespace AdaoModel
   {
       ThreeDVar,
       Blue,
-      NonLinearLeastSquares
+      NonLinearLeastSquares,
+      LinearLeastSquares
   };
 
   class GenericKeyVal;
