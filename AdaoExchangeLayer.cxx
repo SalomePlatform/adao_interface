@@ -280,6 +280,7 @@ private:
 
 void AdaoExchangeLayer::loadTemplate(AdaoModel::MainModel *model)
 {
+  AutoGIL agil;
   const char DECORATOR_FUNC[]="def DecoratorAdao(cppFunc):\n"
       "    def evaluator( xserie ):\n"
       "        import numpy as np\n"
