@@ -321,10 +321,12 @@ void AdaoExchangeLayer::loadTemplate(AdaoModel::MainModel *model)
 
 void ExecuteAsync(PyObject *pyExecuteFunction, DataExchangedBetweenThreads *data)
 {
-  AutoGIL gil; // launched in a separed thread -> protect python calls
-  PyObjectRAII args(PyObjectRAII::FromNew(PyTuple_New(0)));
-  PyObjectRAII nullRes(PyObjectRAII::FromNew(PyObject_CallObject(pyExecuteFunction,args)));// go to adaocallback_call
-  PyErr_Print();
+  {
+    AutoGIL gil; // launched in a separed thread -> protect python calls
+    PyObjectRAII args(PyObjectRAII::FromNew(PyTuple_New(0)));
+    PyObjectRAII nullRes(PyObjectRAII::FromNew(PyObject_CallObject(pyExecuteFunction,args)));// go to adaocallback_call
+    PyErr_Print();
+  }
   data->_finished = true;
   data->_data = nullptr;
   sem_post(&data->_sem);
