@@ -125,7 +125,10 @@ void AdaoExchangeTest::test3DVar()
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   Visitor2 visitorPythonObj(adao.getPythonContext());
-  mm.visitPythonLeaves(&visitorPythonObj);
+  {
+    AutoGIL agil;
+    mm.visitPythonLeaves(&visitorPythonObj);
+  }
   //
   adao.loadTemplate(&mm);
   //
@@ -179,7 +182,10 @@ void AdaoExchangeTest::testBlue()
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   Visitor2 visitorPythonObj(adao.getPythonContext());
-  mm.visitPythonLeaves(&visitorPythonObj);
+  {
+    AutoGIL agil;
+    mm.visitPythonLeaves(&visitorPythonObj);
+  }
   //
   adao.loadTemplate(&mm);
   //
@@ -232,7 +238,10 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   Visitor2 visitorPythonObj(adao.getPythonContext());
-  mm.visitPythonLeaves(&visitorPythonObj);
+  {
+    AutoGIL agil;
+    mm.visitPythonLeaves(&visitorPythonObj);
+  }
   //
   adao.loadTemplate(&mm);
   //
@@ -269,7 +278,10 @@ void AdaoExchangeTest::testCasCrue()
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
   VisitorCruePython visitorPythonObj(adao.getPythonContext());
-  mm.visitPythonLeaves(&visitorPythonObj);
+  {
+    AutoGIL agil;
+    mm.visitPythonLeaves(&visitorPythonObj);
+  }
   //
   adao.loadTemplate(&mm);
   //

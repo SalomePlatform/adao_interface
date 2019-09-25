@@ -168,7 +168,8 @@ class AdaoExchangeLayer::Internal
 {
 public:
   Internal():_context(PyObjectRAII::FromNew(PyDict_New()))
-  { 
+  {
+    AutoGIL agil;
     PyObject *mainmod(PyImport_AddModule("__main__"));
     PyObject *globals(PyModule_GetDict(mainmod));
     PyObject *bltins(PyEval_GetBuiltins());
@@ -227,6 +228,17 @@ PyObject *AdaoExchangeLayer::getPythonContext() const
   return _internal->_context;
 }
 
+/*!
+ * AdaoExchangeLayer is based on multithreaded paradigm.
+ * Master thread (thread calling this method) and slave thread (thread calling ADAO algo)
+ * are calling both python interpretor. Consequence all python calls have to be surrounded with AGIL.
+ *
+ * User consequence : To avoid deadlocks this method release GIL. The downstream python calls must be with AGIL.
+ * 
+ * This method initialize python interpretor if not already the case.
+ * At the end of this method the lock is released to be ready to perform RAII on GIL
+ * easily. 
+ */
 void AdaoExchangeLayer::initPythonIfNeeded()
 {
   if (!Py_IsInitialized())
@@ -239,9 +251,17 @@ void AdaoExchangeLayer::initPythonIfNeeded()
       PySys_SetArgv(1,TABW);
       FreeWChar(1,TABW);
       PyEval_InitThreads();
+      delete _internal;
+      _internal = new Internal;
+      _internal->_tstate=PyEval_SaveThread(); // release the lock acquired in AdaoExchangeLayer::initPythonIfNeeded by PyEval_InitThreads()
     }
-  delete _internal;
-  _internal = new Internal;
+  else
+    {
+      delete _internal;
+      _internal = new Internal;
+      if( PyGILState_Check() )// is the GIL already acquired (typically by a PyEval_InitThreads) ?
+        _internal->_tstate=PyEval_SaveThread(); // release the lock acquired upstream
+    }
 }
 
 class Visitor1 : public AdaoModel::PythonLeafVisitor
@@ -335,7 +355,6 @@ void ExecuteAsync(PyObject *pyExecuteFunction, DataExchangedBetweenThreads *data
 
 void AdaoExchangeLayer::execute()
 {
-  _internal->_tstate=PyEval_SaveThread(); // release the lock acquired in AdaoExchangeLayer::initPythonIfNeeded by PyEval_InitThreads()
   _internal->_fut = std::async(std::launch::async,ExecuteAsync,_internal->_execute_func,&_internal->_data_btw_threads);
 }
 
@@ -364,7 +383,8 @@ void AdaoExchangeLayer::setResult(PyObject *outputAssociated)
 PyObject *AdaoExchangeLayer::getResult()
 {
   _internal->_fut.wait();
-  PyEval_RestoreThread(_internal->_tstate);
+  if(_internal->_tstate)
+    PyEval_RestoreThread(_internal->_tstate);
   AutoGIL gil;
   // now retrieve case.get("Analysis")[-1]
   PyObjectRAII get_func_of_adao_case(PyObjectRAII::FromNew(PyObject_GetAttrString(_internal->_adao_case,"get")));
