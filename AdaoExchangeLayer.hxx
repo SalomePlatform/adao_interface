@@ -40,6 +40,7 @@ public:
   PyObject *getPythonContext() const;
   std::string printContext() const;
   void init();
+  void setFunctionCallbackInModel(AdaoModel::MainModel *model);
   void loadTemplate(AdaoModel::MainModel *model);
   void execute();
   bool next(PyObject *& inputRequested);

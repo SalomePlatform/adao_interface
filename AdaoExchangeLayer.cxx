@@ -319,7 +319,7 @@ private:
   PyObject *_context = nullptr;
 };
 
-void AdaoExchangeLayer::loadTemplate(AdaoModel::MainModel *model)
+void AdaoExchangeLayer::setFunctionCallbackInModel(AdaoModel::MainModel *model)
 {
   AutoGIL agil;
   const char DECORATOR_FUNC[]="def DecoratorAdao(cppFunc):\n"
@@ -346,7 +346,11 @@ void AdaoExchangeLayer::loadTemplate(AdaoModel::MainModel *model)
   //
   Visitor1 visitor(this->_internal->_decorator_func,this->_internal->_context);
   model->visitPythonLeaves(&visitor);
-  //
+}
+
+void AdaoExchangeLayer::loadTemplate(AdaoModel::MainModel *model)
+{
+  AutoGIL agil;
   {
     std::string sciptPyOfModelMaker(model->pyStr());
     PyObjectRAII res(PyObjectRAII::FromNew(PyRun_String(sciptPyOfModelMaker.c_str(),Py_file_input,this->_internal->_context,this->_internal->_context)));

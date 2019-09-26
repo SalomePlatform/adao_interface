@@ -124,6 +124,7 @@ void AdaoExchangeTest::test3DVar()
   AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
+  adao.setFunctionCallbackInModel(&mm);
   Visitor2 visitorPythonObj(adao.getPythonContext());
   {
     AutoGIL agil;
@@ -181,6 +182,7 @@ void AdaoExchangeTest::testBlue()
   AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
+  adao.setFunctionCallbackInModel(&mm);
   Visitor2 visitorPythonObj(adao.getPythonContext());
   {
     AutoGIL agil;
@@ -237,6 +239,7 @@ void AdaoExchangeTest::testNonLinearLeastSquares()
   AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
+  adao.setFunctionCallbackInModel(&mm);
   Visitor2 visitorPythonObj(adao.getPythonContext());
   {
     AutoGIL agil;
@@ -277,6 +280,7 @@ void AdaoExchangeTest::testCasCrue()
   AdaoExchangeLayer adao;
   adao.init();
   // For bounds, Background/Vector, Observation/Vector
+  adao.setFunctionCallbackInModel(&mm);
   VisitorCruePython visitorPythonObj(adao.getPythonContext());
   {
     AutoGIL agil;
