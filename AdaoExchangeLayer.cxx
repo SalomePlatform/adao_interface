@@ -228,6 +228,27 @@ PyObject *AdaoExchangeLayer::getPythonContext() const
   return _internal->_context;
 }
 
+std::string AdaoExchangeLayer::printContext() const
+{
+  AutoGIL agil;
+  PyObject *obj(this->getPythonContext());
+  if(!PyDict_Check(obj))
+    throw AdaoExchangeLayerException("printContext : not a dict !");
+  PyObject *key(nullptr), *value(nullptr);
+  Py_ssize_t pos(0);
+  std::ostringstream oss;
+  while( PyDict_Next(obj, &pos, &key, &value) )
+    {
+      if(!PyUnicode_Check(key))
+        throw AdaoExchangeLayerException("printContext : not a string as key !");
+      oss << PyUnicode_AsUTF8(key) << " = ";
+      PyObjectRAII reprOfValue(PyObjectRAII::FromNew(PyObject_Repr(value)));
+      oss << PyUnicode_AsUTF8(reprOfValue);
+      oss << std::endl;
+    }
+  return oss.str();
+}
+
 /*!
  * AdaoExchangeLayer is based on multithreaded paradigm.
  * Master thread (thread calling this method) and slave thread (thread calling ADAO algo)

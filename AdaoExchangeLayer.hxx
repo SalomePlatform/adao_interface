@@ -22,6 +22,8 @@
 
 #include "Python.h"
 
+#include <string>
+
 class AdaoCallbackSt;
 
 namespace AdaoModel
@@ -36,6 +38,7 @@ public:
   AdaoExchangeLayer();
   ~AdaoExchangeLayer();
   PyObject *getPythonContext() const;
+  std::string printContext() const;
   void init();
   void loadTemplate(AdaoModel::MainModel *model);
   void execute();

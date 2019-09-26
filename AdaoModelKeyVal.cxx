@@ -333,11 +333,13 @@ Observation::Observation():DictKeyVal(KEY)
 ObservationOperator::ObservationOperator():DictKeyVal(KEY)
 {
   std::shared_ptr<OneFunction> v0(std::make_shared<OneFunction>());
-  std::shared_ptr<ObservationOperatorParameters> v1(std::make_shared<ObservationOperatorParameters>());
-  std::shared_ptr<InputFunctionAsMulti> v2(std::make_shared<InputFunctionAsMulti>());
+  std::shared_ptr<MatrixBackgroundError> v1(std::make_shared<MatrixBackgroundError>());
+  std::shared_ptr<ObservationOperatorParameters> v2(std::make_shared<ObservationOperatorParameters>());
+  std::shared_ptr<InputFunctionAsMulti> v3(std::make_shared<InputFunctionAsMulti>());
   _pairs.push_back(std::static_pointer_cast<GenericKeyVal,OneFunction>(v0));
-  _pairs.push_back(std::static_pointer_cast<GenericKeyVal,ObservationOperatorParameters>(v1));
-  _pairs.push_back(std::static_pointer_cast<GenericKeyVal,InputFunctionAsMulti>(v2));
+  _pairs.push_back(std::static_pointer_cast<GenericKeyVal,MatrixBackgroundError>(v1));
+  _pairs.push_back(std::static_pointer_cast<GenericKeyVal,ObservationOperatorParameters>(v2));
+  _pairs.push_back(std::static_pointer_cast<GenericKeyVal,InputFunctionAsMulti>(v3));
 }
 
 ObserverEntry::ObserverEntry():DictKeyVal(KEY)
