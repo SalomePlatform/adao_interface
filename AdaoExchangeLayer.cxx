@@ -213,6 +213,7 @@ AdaoExchangeLayer::AdaoExchangeLayer()
 
 AdaoExchangeLayer::~AdaoExchangeLayer()
 {
+  AutoGIL agil;
   delete _internal;
 }
 
