@@ -24,10 +24,7 @@
 #include "PyObjectRAII.hxx"
 #include "Python.h"
 
-#include "py2cpp/py2cpp.hxx"
-
 #include <semaphore.h>
-
 #include <iostream>
 #include <sstream>
 #include <clocale>

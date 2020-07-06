@@ -41,8 +41,6 @@ if(AEL_ENABLE_TESTS)
     set(PY2CPP_ROOT_DIR $ENV{PY2CPP_ROOT_DIR} CACHE PATH "Path to Py2cpp")
     set(Py2cpp_DIR "${PY2CPP_ROOT_DIR}/lib/cmake/py2cpp")
     find_package(Py2cpp REQUIRED)
-    get_target_property(PY2CPP_INCLUDE_DIR py2cpp INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(PY2CPP_LIB py2cpp IMPORTED_LOCATION_RELEASE)
     find_package(SalomeCppUnit)
   else(EXISTS ${PY2CPP_ROOT_DIR})
     message(FATAL_ERROR "PY2CPP declared as enabled whereas not found !")
@@ -58,7 +56,6 @@ find_package(SalomePythonLibs REQUIRED)
 
 include_directories(
   ${PYTHON_INCLUDE_DIRS}
-  ${PY2CPP_INCLUDE_DIR}
   ${CPPUNIT_INCLUDE_DIRS}
   )
 set(adaoexchange_SOURCES AdaoExchangeLayer.cxx AdaoModelKeyVal.cxx)
@@ -71,6 +68,6 @@ install(TARGETS adaoexchange DESTINATION lib)
 
 if(AEL_ENABLE_TESTS)
   add_executable(TestAdaoExchange TestAdaoExchange.cxx)
-  target_link_libraries(TestAdaoExchange adaoexchange ${PY2CPP_LIB} ${CPPUNIT_LIBRARIES})
+  target_link_libraries(TestAdaoExchange adaoexchange py2cpp ${CPPUNIT_LIBRARIES})
   install(TARGETS TestAdaoExchange DESTINATION bin)
 endif(AEL_ENABLE_TESTS)
