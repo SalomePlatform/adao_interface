@@ -22,7 +22,14 @@ cmake_minimum_required(VERSION 2.6)
 project(AdaoExchangeLayer)
 
 ##
+find_package(PythonInterp)
 
+if(NOT PYTHONINTERP_FOUND)
+  message(FATAL_ERROR "Python interp not found ! We absolutely need it !")
+endif(NOT PYTHONINTERP_FOUND)
+
+set(ADAOEXCHANGELAYER_VERSION "9.11.0")
+set(ADAO_INTERFACE_PYTHON_MODULE "lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/salome")
 set(BUILD_SHARED_LIBS TRUE)
 set(CONFIGURATION_ROOT_DIR $ENV{CONFIGURATION_ROOT_DIR} CACHE PATH "Path to the Salome CMake configuration files")
 if(EXISTS ${CONFIGURATION_ROOT_DIR})
@@ -71,3 +78,8 @@ if(AEL_ENABLE_TESTS)
   target_link_libraries(TestAdaoExchange adaoexchange py2cpp ${CPPUNIT_LIBRARIES})
   install(TARGETS TestAdaoExchange DESTINATION bin)
 endif(AEL_ENABLE_TESTS)
+
+SALOME_SETUP_VERSION(${ADAOEXCHANGELAYER_VERSION})
+file(WRITE ${CMAKE_INSTALL_PREFIX}/${ADAO_INTERFACE_PYTHON_MODULE}/salome/adao_interface/__init__.py
+    "__version__ = \"${ADAOEXCHANGELAYER_VERSION}\"\n__sha1__ = \"${ADAOEXCHANGELAYER_GIT_SHA1}\""
+    )
