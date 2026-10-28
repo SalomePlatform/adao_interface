@@ -24,13 +24,33 @@
 #include "PyObjectRAII.hxx"
 #include "Python.h"
 
+#if !defined(__APPLE__)
 #include <semaphore.h>
+#endif
 #include <iostream>
 #include <sstream>
 #include <clocale>
 #include <cstdlib>
 #include <thread>
 #include <future>
+
+#if defined(__APPLE__)
+// macOS: unnamed POSIX semaphores (sem_init) are not implemented (ENOSYS),
+// emulate the few sem_* calls used below with GCD semaphores
+#include <dispatch/dispatch.h>
+namespace
+{
+  inline int AdaoSemInit(dispatch_semaphore_t *s, int, unsigned int value) { *s = dispatch_semaphore_create(value); return *s ? 0 : -1; }
+  inline int AdaoSemDestroy(dispatch_semaphore_t *s) { dispatch_release(*s); return 0; }
+  inline int AdaoSemPost(dispatch_semaphore_t *s) { dispatch_semaphore_signal(*s); return 0; }
+  inline int AdaoSemWait(dispatch_semaphore_t *s) { return dispatch_semaphore_wait(*s, DISPATCH_TIME_FOREVER) == 0 ? 0 : -1; }
+}
+#define sem_t dispatch_semaphore_t
+#define sem_init AdaoSemInit
+#define sem_destroy AdaoSemDestroy
+#define sem_post AdaoSemPost
+#define sem_wait AdaoSemWait
+#endif
 
 struct DataExchangedBetweenThreads // data written by subthread and read by calling thread
 {
